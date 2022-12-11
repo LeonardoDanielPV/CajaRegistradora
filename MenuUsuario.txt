@@ -1,0 +1,17 @@
+###################################################
+# Menu de usuario                                 #
+#-------------------------------------------------#
+# Almacena, consulta y borra informacion sobre    #
+# articulos de su stock                           #
+#-------------------------------------------------#
+# Permite realizar ventas                         #
+###################################################
+
+Funciones para realizar ventas:             Funciones para los articulos:
+1. AGREGAR productos a la lista             5. ALMACENAR
+2. ELIMINAR ultimo producto de la lista     6. CONSULTAR
+3. CREAR nueva lista                        7. IMPRIMIR lista
+4. VENDER y obtener precios                 8. BORRAR articulo
+
+x. SALIR
+
