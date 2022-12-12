@@ -7,19 +7,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "C:\Programas\ESCOM_NS_ISC_S2_AED_(C)\Herramientas\matematicas_funciones.h"
-#include "C:\Programas\ESCOM_NS_ISC_S2_AED_(C)\Herramientas\arreglos_funciones.h"
+#include "matematicas_funciones.h"
+#include "arreglos_funciones.h"
+#include "miprintMySQL.h"
 
 // ----------- Funciones para pila -----------
 
-#include "C:\Programas\ESCOM_NS_ISC_S2_AED_(C)\Practicas\Caja registradora\Pila.h"
+#include "Caja registradora\Pila.h"
 
 // ----------- Funciones para tabla hash -----------
 
 int Funcion(int, void *);
 int CompDatos(void *, void *);
 void LiberarDatos(void **, int);
-#include "C:\Programas\ESCOM_NS_ISC_S2_AED_(C)\Practicas\Caja registradora\TablaHash.h"
+#include "TablaHash.h"
 
 // ----------- Funciones para interfaz -----------
 
@@ -32,14 +33,14 @@ char encReal[64] = "id,caducidad,precio,unidades,nombre";
 typedef struct
 {
     int id;
-    char caducidad[64];
+    char caducidad[32];
     int precio;
     int unidades;
-    char nombre[64];
+    char nombre[32];
 } producto;
 int ValidaEncabezado(char *);
 TablaHash *Cargar(char *);
-TablaHash *AgregarProducto(char *);
+TablaHash *AgregarProducto(char *, int);
 producto *ConsultarProducto(TablaHash, int);
 void ImprimirProductos(producto **, int);
 void CopiarProducto(producto *, producto);
@@ -97,10 +98,18 @@ int main(int argc, char **argv)
         {
             if(s == '5')
             {
-                Vaciar(&lista);
-                LiberarTablaHash(productos);
-                free(productos);
-                productos = AgregarProducto("BaseDatos.txt");
+                printf("Id: ");
+                scanf("%d", &idActual);
+                while(getchar() != '\n');
+                if(ConsultarProducto(*productos, AbsInt(idActual)))
+                    printf("Ya existe un producto con este id");
+                else
+                {
+                    Vaciar(&lista);
+                    LiberarTablaHash(productos);
+                    free(productos);
+                    productos = AgregarProducto("BaseDatos.txt", idActual);
+                }
             }
             else if(s == '6')
             {
@@ -114,6 +123,7 @@ int main(int argc, char **argv)
             else if(s == '7')
             {
                 ImprimirProductos((producto **)(productos->datos), productos->datos_long);
+                printf("Articulos en stock: %d", productos->datos_long);
             }
             else if(s == '8')
             {
@@ -256,13 +266,11 @@ TablaHash *Cargar(char *baseDatos)
     return tablaHash;
 }
 
-TablaHash *AgregarProducto(char *baseDatos)
+TablaHash *AgregarProducto(char *baseDatos, int id)
 {
     producto actual;
 
-    printf("Id: ");
-    scanf("%d", &actual.id);
-    while(getchar() != '\n');
+    actual.id = id;
     printf("Nombre: ");
     scanf("%[^\n]", actual.nombre);
     while(getchar() != '\n');
@@ -281,7 +289,7 @@ TablaHash *AgregarProducto(char *baseDatos)
     fclose(arch);
 
     printf("Agregado");
-    return Cargar(baseDatos);
+   return Cargar(baseDatos);
 }
 
 producto *ConsultarProducto(TablaHash tablaHash, int id)
@@ -293,9 +301,61 @@ producto *ConsultarProducto(TablaHash tablaHash, int id)
 
 void ImprimirProductos(producto **p, int cantidad)
 {
-    puts("Id\tNombre\tPrecio\tCaducidad\tUnidades");
+    char **columnas = (char **)malloc(sizeof(char *) * 5);
+    int CMAXC = (32 + 1) * cantidad;  // Caracteres maximos por columna
+    for(int i = 0; i < 5; i++)
+        *(columnas + i) = (char *)malloc(sizeof(char) * CMAXC);
+
+    int encAp = 0;
+    for(int c = 0; c < 5; c++, encAp++)
+    {
+        int i = 0;
+        for(i = 0; encReal[encAp] != ',' && encReal[encAp]; i++, encAp++)
+            (*(columnas + c))[i] = encReal[encAp];
+        (*(columnas + c))[i++] = ',';
+        (*(columnas + c))[i] = 0;
+    }
+
+    char aux[32] = {0};
     for(int i = 0; i < cantidad; i++)
-        printf("%d\t%s\t%d\t%s\t%d\n", p[i]->id, p[i]->nombre, p[i]->precio, p[i]->caducidad, p[i]->unidades);
+    {
+        IntACadena((*(p + i))->id, aux);
+        Concatena(*(columnas), aux);
+        if(i + 1 < cantidad)
+            Concatena(*(columnas), ",");
+    }
+    for(int i = 0; i < cantidad; i++)
+    {
+        Concatena(*(columnas + 1), (*(p + i))->caducidad);
+        if(i + 1 < cantidad)
+            Concatena(*(columnas + 1), ",");
+    }
+    for(int i = 0; i < cantidad; i++)
+    {
+        IntACadena((*(p + i))->precio, aux);
+        Concatena(*(columnas + 2), aux);
+        if(i + 1 < cantidad)
+            Concatena(*(columnas + 2), ",");
+    }
+    for(int i = 0; i < cantidad; i++)
+    {
+        IntACadena((*(p + i))->unidades, aux);
+        Concatena(*(columnas + 3), aux);
+        if(i + 1 < cantidad)
+            Concatena(*(columnas + 3), ",");
+    }
+    for(int i = 0; i < cantidad; i++)
+    {
+        Concatena(*(columnas + 4), (*(p + i))->nombre);
+        if(i + 1 < cantidad)
+            Concatena(*(columnas + 4), ",");
+    }
+
+    ImpTablasSC(columnas, 5);
+
+    for(int i = 0; i < 5; i++)
+        free(*(columnas + i));
+    free(columnas);
 }
 
 void CopiarProducto(producto *destino, producto origen)
@@ -347,19 +407,27 @@ void VenderLista(TablaHash productos, Pila *lista)
 {
     int *id;
     producto actual;
-    producto *vender;
-    if(lista->cantidad == 0)
-    {
-        printf("La lista de venta esta vacia");
-        return;
-    }
+    producto **vender = (producto **)malloc(sizeof(producto *) * lista->cantidad);
+
+    int precioBase = 0;
+    float precioTotal;
+
+    int i = 0;
     while(lista->cantidad > 0)
     {
         id = (int *)Pop(lista);
         actual.id = *id;
-        vender = (producto *)ObtenerDato(productos, &actual);
-        ImprimirProductos(&vender, 1);
-        putchar('\n');
         free(id);
+        *(vender + i) = (producto *)ObtenerDato(productos, &actual);
+        precioBase += (*(vender + i))->precio;
+        i++;
     }
+
+    printf("Se vendieron los siguientes articulos\n");
+    ImprimirProductos(vender, i);
+    printf("Precio total: ");
+    precioTotal = precioBase + (float)precioBase * 60 / 100;
+    printf("%f", precioTotal);
+
+    free(vender);
 }
