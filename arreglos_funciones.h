@@ -72,3 +72,12 @@ void CopiaCadena(char *destino, char *origen)
     while((destino[i] = origen[i]))
         i++;
 }
+
+void Concatena(char *agregando, char *agregado)
+{
+    int i;
+    for(i = 0; agregando[i]; i++);
+    for(int j = 0; agregado[j]; j++, i++)
+        agregando[i] = agregado[j];
+    agregando[i] = 0;
+}
