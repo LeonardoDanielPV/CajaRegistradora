@@ -13,7 +13,7 @@
 
 // ----------- Funciones para pila -----------
 
-#include "Caja registradora\Pila.h"
+#include "Pila.h"
 
 // ----------- Funciones para tabla hash -----------
 
